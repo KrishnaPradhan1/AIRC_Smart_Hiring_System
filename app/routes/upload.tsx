@@ -68,19 +68,43 @@ const Upload = () => {
                 )
 
                 if (feedback) {
-                    const feedbackText = typeof feedback.message.content === 'string'
+                    let feedbackText = typeof feedback.message.content === 'string'
                         ? feedback.message.content
-                        : feedback.message.content[0].text;
+                        : (feedback.message.content[0] as any).text;
 
-                    data.feedback = JSON.parse(feedbackText);
-                    await kv.set(`resume:${uuid}`, JSON.stringify(data));
+                    // Strip markdown wrapping if the AI accidentally generates it
+                    feedbackText = feedbackText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                    console.log("RAW AI FEEDBACK:", feedbackText);
+
+                    try {
+                        data.feedback = JSON.parse(feedbackText);
+                        await kv.set(`resume:${uuid}`, JSON.stringify(data));
+                        completed++;
+                    } catch (parseError) {
+                        console.error(`Failed to parse AI feedback as JSON for ${file.name}:`, feedbackText, parseError);
+                        alert(`Error analyzing ${file.name}: The AI generated an invalid response format.`);
+                        setIsProcessing(false);
+                        return; // Stop processing and don't redirect
+                    }
                 } else {
                     console.error(`Failed to analyze ${file.name}`);
+                    alert(`Error analyzing ${file.name}: The AI failed to return a response.`);
+                    setIsProcessing(false);
+                    return; // Stop processing and don't redirect
                 }
-
-                completed++;
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Error processing ${file.name}:`, error);
+
+                // Properly stringify the error instead of letting it become [object Object]
+                const errorMessage = error instanceof Error
+                    ? error.message
+                    : typeof error === 'object'
+                        ? JSON.stringify(error, Object.getOwnPropertyNames(error))
+                        : String(error);
+
+                alert(`Error processing ${file.name}: ${errorMessage}`);
+                setIsProcessing(false);
+                return; // Stop processing and don't redirect
             }
         }
 

@@ -7,6 +7,8 @@ export const resumes: Resume[] = [
         resumePath: "/resumes/resume-1.pdf",
         feedback: {
             overallScore: 85,
+            roleClassification: "Frontend Developer",
+            missingKeywords: ["GraphQL", "Docker"],
             ATS: {
                 score: 90,
                 tips: [],
@@ -37,6 +39,8 @@ export const resumes: Resume[] = [
         resumePath: "/resumes/resume-2.pdf",
         feedback: {
             overallScore: 55,
+            roleClassification: "Backend Developer",
+            missingKeywords: ["AWS", "Kubernetes", "CI/CD"],
             ATS: {
                 score: 90,
                 tips: [],
@@ -67,6 +71,8 @@ export const resumes: Resume[] = [
         resumePath: "/resumes/resume-3.pdf",
         feedback: {
             overallScore: 75,
+            roleClassification: "Mobile Developer",
+            missingKeywords: ["SwiftUI", "Combine"],
             ATS: {
                 score: 90,
                 tips: [],
@@ -97,6 +103,8 @@ export const resumes: Resume[] = [
         resumePath: "/resumes/resume-1.pdf",
         feedback: {
             overallScore: 85,
+            roleClassification: "Frontend Developer",
+            missingKeywords: ["Next.js", "Redux"],
             ATS: {
                 score: 90,
                 tips: [],
@@ -127,6 +135,8 @@ export const resumes: Resume[] = [
         resumePath: "/resumes/resume-2.pdf",
         feedback: {
             overallScore: 55,
+            roleClassification: "DevOps Engineer",
+            missingKeywords: ["Terraform", "Ansible"],
             ATS: {
                 score: 90,
                 tips: [],
@@ -157,6 +167,8 @@ export const resumes: Resume[] = [
         resumePath: "/resumes/resume-3.pdf",
         feedback: {
             overallScore: 75,
+            roleClassification: "iOS Developer",
+            missingKeywords: ["Objective-C", "Fastlane"],
             ATS: {
                 score: 90,
                 tips: [],
@@ -184,6 +196,8 @@ export const resumes: Resume[] = [
 export const AIResponseFormat = `
       interface Feedback {
       overallScore: number; //max 100
+      roleClassification: string; // e.g., "Frontend Developer", "Data Scientist"
+      missingKeywords: string[]; // List of critical skills missing from the resume
       ATS: {
         score: number; //rate based on ATS suitability
         tips: {
@@ -225,17 +239,17 @@ export const AIResponseFormat = `
       };
     }`;
 
-export const prepareInstructions = ({jobTitle, jobDescription}: { jobTitle: string; jobDescription: string; }) =>
+export const prepareInstructions = ({ jobTitle, jobDescription }: { jobTitle: string; jobDescription: string; }) =>
     `You are an expert in ATS (Applicant Tracking System) and resume analysis.
-      Please analyze and rate this resume and suggest how to improve it.
+      Please analyze and rate this resume and suggest how to improve it according to the latest industry standards.
       The rating can be low if the resume is bad.
       Be thorough and detailed. Don't be afraid to point out any mistakes or areas for improvement.
-      If there is a lot to improve, don't hesitate to give low scores. This is to help the user to improve their resume.
-      If available, use the job description for the job user is applying to to give more detailed feedback.
-      If provided, take the job description into consideration.
+      If there is a lot to improve, don't hesitate to give low scores to help the user improve their resume.
+      Use the provided job description to give specific, tailored feedback.
       The job title is: ${jobTitle}
       The job description is: ${jobDescription}
-      Provide the feedback using the following format:
+      
+      Provide the feedback STRICTLY using the following JSON structure:
       ${AIResponseFormat}
-      Return the analysis as an JSON object, without any other text and without the backticks.
-      Do not include any other text or comments.`;
+      
+      IMPORTANT: You MUST return ONLY the raw JSON object. Do NOT wrap it in markdown code blocks (like \`\`\`json). Do NOT include any introductory or concluding text. Your entire response must be parseable by JSON.parse().`;

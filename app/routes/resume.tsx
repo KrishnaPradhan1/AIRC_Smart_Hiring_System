@@ -4,6 +4,7 @@ import { usePuterStore } from "~/lib/puter";
 import Summary from "~/components/Summary";
 import ATS from "~/components/ATS";
 import Details from "~/components/Details";
+import RoleAnalysis from "~/components/RoleAnalysis";
 
 export const meta = () => ([
     { title: 'AIRC | Review ' },
@@ -16,6 +17,7 @@ const Resume = () => {
     const [imageUrl, setImageUrl] = useState('');
     const [resumeUrl, setResumeUrl] = useState('');
     const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [analysisError, setAnalysisError] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -43,6 +45,9 @@ const Resume = () => {
             setImageUrl(imageUrl);
 
             setFeedback(data.feedback);
+            if (!data.feedback || data.feedback === '') {
+                setAnalysisError(true);
+            }
             console.log({ resumeUrl, imageUrl, feedback: data.feedback });
         }
 
@@ -76,8 +81,14 @@ const Resume = () => {
                     {feedback ? (
                         <div className="flex flex-col gap-8 animate-in fade-in duration-1000">
                             <Summary feedback={feedback} />
+                            <RoleAnalysis role={feedback.roleClassification} missingKeywords={feedback.missingKeywords} />
                             <ATS score={feedback.ATS.score || 0} suggestions={feedback.ATS.tips || []} />
                             <Details feedback={feedback} />
+                        </div>
+                    ) : analysisError ? (
+                        <div className="flex flex-col gap-4 items-center justify-center h-full">
+                            <h3 className="text-2xl font-bold text-red-500">Analysis Failed</h3>
+                            <p className="text-gray-600">The AI could not generate valid feedback for this resume. Please delete the resume and try again.</p>
                         </div>
                     ) : (
                         <img src="/images/resume-scan-2.gif" className="w-full" />

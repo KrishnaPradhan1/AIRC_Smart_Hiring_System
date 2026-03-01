@@ -95,25 +95,32 @@ Make sure you have the following installed on your machine:
 **Cloning the Repository**
 
 ```bash
-git clone https://github.com/adrianhajdin/ai-resume-analyzer.git
-cd ai-resume-analyzer
+git clone https://github.com/KrishnaPradhan1/AiRCs.git
+cd AiRCs
 ```
 
 **Installation**
 
-Install the project dependencies using npm:
+Install the project dependencies:
 
 ```bash
 npm install
 ```
 
-**Running the Project**
+**Running Locally (Development)**
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser to view the project.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+**Building for Production**
+
+```bash
+npm run build
+npm start
+```
 
 ## <a name="links">🔗 Assets</a>
 

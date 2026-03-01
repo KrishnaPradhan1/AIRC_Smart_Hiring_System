@@ -9,6 +9,8 @@ interface Resume {
 
 interface Feedback {
     overallScore: number;
+    roleClassification: string;
+    missingKeywords: string[];
     ATS: {
         score: number;
         tips: {
