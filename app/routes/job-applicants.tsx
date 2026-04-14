@@ -35,7 +35,7 @@ export default function JobApplicants() {
                     .select('*')
                     .eq('id', jobId)
                     .single();
-                
+
                 if (jobData) setJob(jobData);
 
                 // Fetch Applications
@@ -53,8 +53,8 @@ export default function JobApplicants() {
                 if (appsData) {
                     // Sort locally by hybrid overall score descending
                     const sortedApps = appsData.sort((a, b) => {
-                        const scoreA = Number(a.hybrid_score?.overallScore || a.resume_data?.feedback?.overallScore) || 0;
-                        const scoreB = Number(b.hybrid_score?.overallScore || b.resume_data?.feedback?.overallScore) || 0;
+                        const scoreA = a.hybrid_score?.overallScore || a.resume_data?.feedback?.overallScore || 0;
+                        const scoreB = b.hybrid_score?.overallScore || b.resume_data?.feedback?.overallScore || 0;
                         return scoreB - scoreA;
                     });
                     setApplications(sortedApps);
@@ -97,12 +97,12 @@ export default function JobApplicants() {
 
         try {
             await supabase.from('applications').update({ status: 'selected' }).eq('id', app.id);
-            
+
             // Dispatch Background Email via EmailJS
-            const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-            const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-            const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-            
+            const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_0j0s4zs';
+            const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_iekffki';
+            const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'ngGVMzm0I5cxCKvdA';
+
             if (serviceId && templateId && publicKey && templateId !== 'template_YOUR_TEMPLATE_ID_HERE') {
                 // Email 1: To the candidate
                 await emailjs.send(
@@ -117,16 +117,16 @@ export default function JobApplicants() {
                     },
                     publicKey
                 );
-                
+
                 // Email 2: Details to the Recruiter
                 const score = app.hybrid_score?.overallScore || app.resume_data?.feedback?.overallScore || 0;
                 const resumeLink = app.resume_data?.resumeUrl || 'Not provided. No resume attached.';
-                
+
                 let hrRecipient = recruiterEmail;
                 if (!hrRecipient) {
-                   hrRecipient = prompt("Your recruiter profile is missing a corporate email. Enter an email to receive the candidate's resume packet for your records, or cancel to skip:", "") || "";
+                    hrRecipient = prompt("Your recruiter profile is missing a corporate email. Enter an email to receive the candidate's resume packet for your records, or cancel to skip:", "") || "";
                 }
-                
+
                 if (hrRecipient) {
                     await emailjs.send(
                         serviceId,
@@ -167,17 +167,17 @@ export default function JobApplicants() {
         }
 
         setApplications(apps => apps.map(app => app.id === appId ? { ...app, status: 'rejected' } : app));
-        
+
         try {
             await supabase.from('applications').update({ status: 'rejected' }).eq('id', appId);
 
             // Dispatch Rejection Background Email via EmailJS
-            const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-            const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-            const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-            
+            const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_0j0s4zs';
+            const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_iekffki';
+            const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'ngGVMzm0I5cxCKvdA';
+
             if (serviceId && templateId && publicKey && templateId !== 'template_YOUR_TEMPLATE_ID_HERE') {
-                
+
                 let missingKeywordsSnippet = '';
                 if (feedback?.missingKeywords && feedback.missingKeywords.length > 0) {
                     missingKeywordsSnippet = `To improve your chances in the future, our AI screening system completely analyzed your resume and noted that it was missing these core technical skills related to the role: ${feedback.missingKeywords.slice(0, 5).join(', ')}.`;
@@ -225,7 +225,7 @@ export default function JobApplicants() {
     return (
         <main className="bg-[url('/images/bg-main.svg')] bg-cover min-h-screen pb-24">
             <Navbar />
-            
+
             <section className="max-w-6xl mx-auto px-4 mt-8">
                 <div className="mb-8">
                     <Link to="/recruiter" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-semibold mb-4 hover:-translate-x-1 transition-transform">
@@ -251,7 +251,7 @@ export default function JobApplicants() {
                             return (
                                 <div key={app.id} className={`bg-white rounded-2xl shadow-md border-l-8 ${isSelected ? 'border-l-green-500' : isRejected ? 'border-l-red-500 opacity-60' : 'border-l-indigo-500'} p-6 transition-all`}>
                                     <div className="flex flex-col md:flex-row justify-between md:items-start gap-6">
-                                        
+
                                         {/* Candidate Info */}
                                         <div className="flex-1">
                                             <div className="flex items-center gap-4 mb-2">
@@ -288,7 +288,7 @@ export default function JobApplicants() {
                                                     <p className="text-sm text-gray-700 italic border-l-2 border-indigo-300 pl-3 py-1">
                                                         "{app.audio_transcript.substring(0, 150)}{app.audio_transcript.length > 150 ? '...' : ''}"
                                                     </p>
-                                                    
+
                                                     {app.audio_feedback && (
                                                         <div className="mt-3 flex items-center gap-4">
                                                             <div className="text-xs font-bold bg-white px-2 py-1 rounded text-indigo-700 shadow-sm border border-indigo-100">
@@ -314,9 +314,9 @@ export default function JobApplicants() {
 
                                             <div className="flex flex-col gap-2 w-full">
                                                 {app.resume_data?.resumeUrl && (
-                                                    <a 
-                                                        href={app.resume_data.resumeUrl} 
-                                                        target="_blank" 
+                                                    <a
+                                                        href={app.resume_data.resumeUrl}
+                                                        target="_blank"
                                                         rel="noreferrer"
                                                         className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-2 shadow-md"
                                                     >
@@ -325,19 +325,19 @@ export default function JobApplicants() {
                                                 )}
                                                 {!isSelected && !isRejected && (
                                                     <>
-                                                        <Link 
+                                                        <Link
                                                             to={`/recruiter/application/${app.id}`}
                                                             className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 rounded-xl transition-all text-center border border-blue-200"
                                                         >
                                                             View Full Details
                                                         </Link>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleSelectCandidate(app)}
                                                             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-md mt-1"
                                                         >
                                                             Select & Email Candidate
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleRejectCandidate(app.id, student.email, student.full_name, app.resume_data?.feedback)}
                                                             className="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-2.5 rounded-xl transition-all"
                                                         >
@@ -345,7 +345,7 @@ export default function JobApplicants() {
                                                         </button>
                                                     </>
                                                 )}
-                                                
+
                                                 {isSelected && (
                                                     <div className="w-full bg-green-100 text-green-800 font-bold py-2.5 rounded-xl text-center border border-green-200">
                                                         ✓ Selected User
@@ -369,7 +369,7 @@ export default function JobApplicants() {
 
                 {!isLoading && applications.length > visibleCount && (
                     <div className="flex justify-center mt-12 mb-8">
-                        <button 
+                        <button
                             onClick={() => setVisibleCount(prev => prev + 20)}
                             className="bg-white border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-bold py-3 px-8 rounded-full shadow-sm transition-all flex items-center gap-2 hover:scale-105"
                         >
