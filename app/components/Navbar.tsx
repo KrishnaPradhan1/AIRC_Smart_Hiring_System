@@ -8,6 +8,7 @@ const Navbar = () => {
     // If role is null but they are authenticated, default to student view so navigation doesn't vanish
     const isStudent = auth.role === 'student' || !auth.isAuthenticated || (auth.isAuthenticated && !auth.role);
 
+    const homeLink = isRecruiter ? "/recruiter" : "/";
     const navigate = useNavigate();
     const location = useLocation();
     

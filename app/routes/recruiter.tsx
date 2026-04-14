@@ -128,7 +128,7 @@ const RecruiterDashboard = () => {
             const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
             const now = Date.now();
 
-            for (const resumeItem of allResumes) {
+            for (const resumeItem of allResumes || []) {
                 if (!resumeItem.value) continue;
                 try {
                     const parsed = JSON.parse(resumeItem.value);
