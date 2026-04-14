@@ -5,6 +5,15 @@ import Summary from "~/components/Summary";
 import ATS from "~/components/ATS";
 import Details from "~/components/Details";
 import RoleAnalysis from "~/components/RoleAnalysis";
+import GrammarAndStyle from "~/components/GrammarAndStyle";
+import BulletStrength from "~/components/BulletStrength";
+import { useBuilderStore } from "~/lib/builderStore";
+import { textToResumeHTML } from "~/lib/textToResumeHTML";
+import { extractTextFromPdf } from "~/lib/extractTextFromPdf";
+import { Edit3, Loader2 } from "lucide-react";
+import AudioPitch from "~/components/AudioPitch";
+
+type TabType = 'ats' | 'grammar' | 'bullets' | 'audio';
 
 export const meta = () => ([
     { title: 'AIRC | Review ' },
@@ -13,11 +22,16 @@ export const meta = () => ([
 
 const Resume = () => {
     const { auth, isLoading, fs, kv } = usePuterStore();
+    const { setDocHTML } = useBuilderStore();
     const { id } = useParams();
     const [imageUrl, setImageUrl] = useState('');
     const [resumeUrl, setResumeUrl] = useState('');
-    const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [resumeData, setResumeData] = useState<Resume | null>(null);
+    const feedback = resumeData?.feedback;
+    const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
     const [analysisError, setAnalysisError] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabType>('ats');
+    const [isConverting, setIsConverting] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,6 +50,7 @@ const Resume = () => {
             if (!resumeBlob) return;
 
             const pdfBlob = new Blob([resumeBlob], { type: 'application/pdf' });
+            setPdfBlob(pdfBlob);
             const resumeUrl = URL.createObjectURL(pdfBlob);
             setResumeUrl(resumeUrl);
 
@@ -44,7 +59,7 @@ const Resume = () => {
             const imageUrl = URL.createObjectURL(imageBlob);
             setImageUrl(imageUrl);
 
-            setFeedback(data.feedback);
+            setResumeData(data);
             if (!data.feedback || data.feedback === '') {
                 setAnalysisError(true);
             }
@@ -53,6 +68,29 @@ const Resume = () => {
 
         loadResume();
     }, [id]);
+
+    const handleFixInEditor = async () => {
+        if (!pdfBlob) {
+            alert('Resume PDF not loaded yet. Please wait.');
+            return;
+        }
+
+        setIsConverting(true);
+        try {
+            // Extract text directly from the PDF file using PDF.js
+            const rawText = await extractTextFromPdf(pdfBlob);
+
+            // Convert to structured HTML and load into editor
+            const htmlContent = textToResumeHTML(rawText);
+            setDocHTML(htmlContent);
+            navigate('/builder');
+        } catch (err) {
+            console.error('Failed to extract text from PDF:', err);
+            alert('Failed to read the PDF. Please try again.');
+        } finally {
+            setIsConverting(false);
+        }
+    };
 
     return (
         <main className="!pt-0">
@@ -63,7 +101,7 @@ const Resume = () => {
                 </Link>
             </nav>
             <div className="flex flex-row w-full max-lg:flex-col-reverse">
-                <section className="feedback-section bg-[url('/images/bg-small.svg') bg-cover h-[100vh] sticky top-0 items-center justify-center">
+                <section className="feedback-section bg-[url('/images/bg-small.svg')] bg-cover h-[100vh] sticky top-0 items-center justify-center">
                     {imageUrl && resumeUrl && (
                         <div className="animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-wxl:h-fit w-fit">
                             <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
@@ -77,13 +115,83 @@ const Resume = () => {
                     )}
                 </section>
                 <section className="feedback-section">
-                    <h2 className="text-4xl !text-black font-bold">Resume Review</h2>
+                    <div className="flex justify-between items-center w-full max-w-3xl">
+                        <h2 className="text-4xl !text-black font-bold">Resume Review</h2>
+                        {pdfBlob && (
+                            <button
+                                onClick={handleFixInEditor}
+                                disabled={isConverting}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all disabled:opacity-50"
+                            >
+                                {isConverting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Extracting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Edit3 className="w-4 h-4" />
+                                        Fix in Editor
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                     {feedback ? (
-                        <div className="flex flex-col gap-8 animate-in fade-in duration-1000">
-                            <Summary feedback={feedback} />
-                            <RoleAnalysis role={feedback.roleClassification} missingKeywords={feedback.missingKeywords} />
-                            <ATS score={feedback.ATS.score || 0} suggestions={feedback.ATS.tips || []} />
-                            <Details feedback={feedback} />
+                        <div className="flex flex-col gap-8 animate-in fade-in duration-500 w-full max-w-3xl">
+                            {/* Tabs Navigation */}
+                            <div className="flex gap-2 border-b border-gray-200 pb-2">
+                                <button
+                                    onClick={() => setActiveTab('ats')}
+                                    className={`px-4 py-2 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'ats' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}
+                                >
+                                    ATS Match
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('grammar')}
+                                    className={`px-4 py-2 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'grammar' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}
+                                >
+                                    Grammar & Style
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('bullets')}
+                                    className={`px-4 py-2 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'bullets' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}
+                                >
+                                    Bullet Strength
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('audio')}
+                                    className={`px-4 py-2 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'audio' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}
+                                >
+                                    Audio Pitch
+                                </button>
+                            </div>
+
+                            {/* Tab Content */}
+                            {activeTab === 'ats' && (
+                                <div className="flex flex-col gap-8 animate-in fade-in duration-500">
+                                    <Summary feedback={feedback} />
+                                    <RoleAnalysis role={feedback.roleClassification} missingKeywords={feedback.missingKeywords} />
+                                    <ATS score={feedback.ATS.score || 0} suggestions={feedback.ATS.tips || []} />
+                                    <Details feedback={feedback} />
+                                </div>
+                            )}
+
+                            {activeTab === 'grammar' && (
+                                <GrammarAndStyle feedback={feedback} />
+                            )}
+
+                            {activeTab === 'bullets' && (
+                                <BulletStrength feedback={feedback} />
+                            )}
+
+                            {activeTab === 'audio' && resumeData && (
+                                <AudioPitch 
+                                    resumeId={id as string} 
+                                    resumeData={resumeData} 
+                                    onUpdate={(updatedData) => setResumeData(updatedData)} 
+                                />
+                            )}
                         </div>
                     ) : analysisError ? (
                         <div className="flex flex-col gap-4 items-center justify-center h-full">

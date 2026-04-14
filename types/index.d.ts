@@ -5,9 +5,24 @@ interface Resume {
     imagePath: string;
     resumePath: string;
     feedback: Feedback;
+    audioTranscript?: string;
+    audioFeedback?: AudioFeedback;
+}
+
+interface AudioFeedback {
+    score: number;
+    communicationStyle: string;
+    strengths: string[];
+    weaknesses: string[];
+    tips: string[];
 }
 
 interface Feedback {
+    extractedText: string;
+    extractedSkills: string[];
+    jobDescriptionSkills: string[];
+    semanticScore?: number;
+    keywordScore?: number;
     overallScore: number;
     roleClassification: string;
     missingKeywords: string[];
@@ -23,7 +38,7 @@ interface Feedback {
         tips: {
             type: "good" | "improve";
             tip: string;
-            explanation: string;
+            explanation?: string;
         }[];
     };
     content: {
@@ -31,7 +46,7 @@ interface Feedback {
         tips: {
             type: "good" | "improve";
             tip: string;
-            explanation: string;
+            explanation?: string;
         }[];
     };
     structure: {
@@ -39,7 +54,7 @@ interface Feedback {
         tips: {
             type: "good" | "improve";
             tip: string;
-            explanation: string;
+            explanation?: string;
         }[];
     };
     skills: {
@@ -47,7 +62,7 @@ interface Feedback {
         tips: {
             type: "good" | "improve";
             tip: string;
-            explanation: string;
+            explanation?: string;
         }[];
     };
 }

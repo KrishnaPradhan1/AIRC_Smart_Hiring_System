@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useState, useEffect } from 'react';
 import Navbar from "~/components/Navbar";
 import FileUploader from "~/components/FileUploader";
 import { usePuterStore } from "~/lib/puter";
@@ -6,6 +6,10 @@ import { useNavigate } from "react-router";
 import { convertPdfToImage } from "~/lib/pdf2img";
 import { generateUUID } from "~/lib/utils";
 import { prepareInstructions } from "../../constants";
+import { safeJsonParse } from "~/lib/safeJsonParse";
+import { UnifiedFeedbackSchema } from "../../types/matching";
+import { computeHybridScore } from "~/lib/matchingEngine";
+import { extractTextFromPdf } from "~/lib/extractTextFromPdf";
 
 const Upload = () => {
     const { auth, isLoading, fs, ai, kv } = usePuterStore();
@@ -60,11 +64,21 @@ const Upload = () => {
                 }
                 await kv.set(`resume:${uuid}`, JSON.stringify(data));
 
+                setStatusText(`Processing ${currentNum} of ${total}: Extracting text from PDF...`);
+                let resumeText = '';
+                try {
+                    resumeText = await extractTextFromPdf(file);
+                } catch (extractErr) {
+                    console.error("Failed to extract text client-side:", extractErr);
+                    // We'll proceed with empty text, maybe the AI can still read the file natively,
+                    // but usually it's better to log it and continue.
+                }
+
                 setStatusText(`Processing ${currentNum} of ${total}: Analyzing with AI...`);
 
                 const feedback = await ai.feedback(
                     uploadedFile.path,
-                    prepareInstructions({ jobTitle, jobDescription })
+                    prepareInstructions({ jobTitle, jobDescription, resumeText })
                 )
 
                 if (feedback) {
@@ -72,17 +86,40 @@ const Upload = () => {
                         ? feedback.message.content
                         : (feedback.message.content[0] as any).text;
 
-                    // Strip markdown wrapping if the AI accidentally generates it
-                    feedbackText = feedbackText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
                     console.log("RAW AI FEEDBACK:", feedbackText);
 
-                    try {
-                        data.feedback = JSON.parse(feedbackText);
+                    const parsedResult = safeJsonParse(feedbackText, UnifiedFeedbackSchema);
+
+                    if (parsedResult.success) {
+                        setStatusText(`Processing ${currentNum} of ${total}: Computing Hybrid Score (Embeddings)...`);
+
+                        const hybrid = await computeHybridScore(
+                            parsedResult.data.overallScore,
+                            parsedResult.data.extractedText,
+                            jobDescription,
+                            parsedResult.data.extractedSkills,
+                            parsedResult.data.jobDescriptionSkills,
+                            (progressInfo: any) => {
+                                if (progressInfo.status === 'progress') {
+                                    setStatusText(`Downloading matching model: ${Math.round(progressInfo.progress)}%`);
+                                }
+                            }
+                        );
+
+                        data.feedback = {
+                            ...parsedResult.data,
+                            overallScore: hybrid.overallScore,
+                            semanticScore: hybrid.semanticScore,
+                            keywordScore: hybrid.keywordScore
+                        } as any;
+
                         await kv.set(`resume:${uuid}`, JSON.stringify(data));
                         completed++;
-                    } catch (parseError) {
-                        console.error(`Failed to parse AI feedback as JSON for ${file.name}:`, feedbackText, parseError);
-                        alert(`Error analyzing ${file.name}: The AI generated an invalid response format.`);
+                    } else {
+                        let errObj = (parsedResult as any).error || {};
+                        let parseErrMsg = JSON.stringify(errObj.issues || errObj.message || errObj);
+                        console.error(`Failed to parse AI feedback as JSON for ${file.name}:`, feedbackText, errObj);
+                        alert(`Error analyzing ${file.name}: The AI generated an invalid response format.\n\nDetails:\n${parseErrMsg}`);
                         setIsProcessing(false);
                         return; // Stop processing and don't redirect
                     }

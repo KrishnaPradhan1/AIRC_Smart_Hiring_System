@@ -13,14 +13,18 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const { auth, kv } = usePuterStore();
+  const { auth, isLoading, kv, fs } = usePuterStore();
   const navigate = useNavigate();
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loadingResumes, setLoadingResumes] = useState(false);
 
   useEffect(() => {
-    if (!auth.isAuthenticated) navigate('/auth?next=/');
-  }, [auth.isAuthenticated])
+    if (!auth.isAuthenticated) {
+      if (!isLoading) navigate('/auth?next=/');
+    } else if (auth.role === 'recruiter') {
+      navigate('/recruiter');
+    }
+  }, [auth.isAuthenticated, auth.role])
 
   useEffect(() => {
     const loadResumes = async () => {
@@ -28,9 +32,9 @@ export default function Home() {
 
       const resumes = (await kv.list('resume:*', true)) as KVItem[];
 
-      const parsedResumes = resumes?.map((resume) => (
-        JSON.parse(resume.value) as Resume
-      ))
+      const parsedResumes = resumes
+        ?.filter((resume) => resume.value && resume.value !== '')
+        .map((resume) => JSON.parse(resume.value) as Resume);
 
       setResumes(parsedResumes || []);
       setLoadingResumes(false);
@@ -38,6 +42,29 @@ export default function Home() {
 
     loadResumes()
   }, []);
+
+  const handleDeleteResume = async (id: string) => {
+    // Find the resume data to get file paths before removing from state
+    const resumeData = resumes.find(r => r.id === id);
+
+    // Remove from UI immediately
+    setResumes(prev => prev.filter(r => r.id !== id));
+
+    // Clean up storage in background (best-effort)
+    try {
+      await kv.set(`resume:${id}`, '');  // Clear the KV entry (overwrite with empty)
+    } catch (e) {
+      console.warn('KV cleanup failed:', e);
+    }
+
+    // Try to delete files (may fail if paths don't exist — that's ok)
+    if (resumeData?.resumePath) {
+      try { await fs.delete(resumeData.resumePath); } catch { /* ignore */ }
+    }
+    if (resumeData?.imagePath) {
+      try { await fs.delete(resumeData.imagePath); } catch { /* ignore */ }
+    }
+  };
 
   return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
     <Navbar />
@@ -60,7 +87,7 @@ export default function Home() {
       {!loadingResumes && resumes.length > 0 && (
         <div className="resumes-section">
           {resumes.map((resume) => (
-            <ResumeCard key={resume.id} resume={resume} />
+            <ResumeCard key={resume.id} resume={resume} onDelete={handleDeleteResume} />
           ))}
         </div>
       )}

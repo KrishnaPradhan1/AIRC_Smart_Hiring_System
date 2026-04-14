@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { supabase } from "./supabase";
 
 declare global {
     interface Window {
@@ -48,6 +49,7 @@ interface PuterStore {
     puterReady: boolean;
     auth: {
         user: PuterUser | null;
+        role: 'student' | 'recruiter' | null;
         isAuthenticated: boolean;
         signIn: () => Promise<void>;
         signOut: () => Promise<void>;
@@ -106,6 +108,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
             isLoading: false,
             auth: {
                 user: null,
+                role: null,
                 isAuthenticated: false,
                 signIn: get().auth.signIn,
                 signOut: get().auth.signOut,
@@ -129,9 +132,25 @@ export const usePuterStore = create<PuterStore>((set, get) => {
             const isSignedIn = await puter.auth.isSignedIn();
             if (isSignedIn) {
                 const user = await puter.auth.getUser();
+                
+                let role = null;
+                try {
+                    const { data } = await supabase.from('profiles').select('role').eq('id', user.username || 'anonymous').single();
+                    role = data?.role || null;
+                } catch (e) {
+                    console.error("Could not fetch user role during auth check", e);
+                }
+
+                if (role) {
+                    localStorage.setItem('userRole', role);
+                } else {
+                    role = localStorage.getItem('userRole') as 'student' | 'recruiter' | null;
+                }
+
                 set({
                     auth: {
                         user,
+                        role,
                         isAuthenticated: true,
                         signIn: get().auth.signIn,
                         signOut: get().auth.signOut,
@@ -146,6 +165,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
                 set({
                     auth: {
                         user: null,
+                        role: null,
                         isAuthenticated: false,
                         signIn: get().auth.signIn,
                         signOut: get().auth.signOut,
@@ -197,6 +217,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
             set({
                 auth: {
                     user: null,
+                    role: null,
                     isAuthenticated: false,
                     signIn: get().auth.signIn,
                     signOut: get().auth.signOut,
@@ -223,9 +244,23 @@ export const usePuterStore = create<PuterStore>((set, get) => {
 
         try {
             const user = await puter.auth.getUser();
+            
+            let role = null;
+            try {
+                const { data } = await supabase.from('profiles').select('role').eq('id', user.username || 'anonymous').single();
+                role = data?.role || null;
+            } catch (e) {}
+
+            if (role) {
+                localStorage.setItem('userRole', role);
+            } else {
+                role = localStorage.getItem('userRole') as 'student' | 'recruiter' | null;
+            }
+
             set({
                 auth: {
                     user,
+                    role,
                     isAuthenticated: true,
                     signIn: get().auth.signIn,
                     signOut: get().auth.signOut,
@@ -416,6 +451,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
         puterReady: false,
         auth: {
             user: null,
+            role: null,
             isAuthenticated: false,
             signIn,
             signOut,
