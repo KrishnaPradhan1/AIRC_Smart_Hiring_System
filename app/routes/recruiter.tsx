@@ -2,7 +2,7 @@ import { type FormEvent, useState, useEffect } from 'react'
 import Navbar from "~/components/Navbar";
 import FileUploader from "~/components/FileUploader";
 import { usePuterStore } from "~/lib/puter";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { convertPdfToImage } from "~/lib/pdf2img";
 import { generateUUID } from "~/lib/utils";
 import { prepareInstructions } from "../../constants";
@@ -25,7 +25,19 @@ interface CandidateResult {
 const RecruiterDashboard = () => {
     const { fs, ai, kv, auth } = usePuterStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState<'jobs' | 'batch'>('jobs');
+    
+    // Sync React-Router state to Navbar navigations
+    useEffect(() => {
+        if (location.search.includes('history')) {
+            setActiveTab('batch');
+            setShowPreviousBatches(true);
+        } else if (location.search === '') {
+            // "Home" button clicked from Navbar drops search queries
+            setActiveTab('jobs');
+        }
+    }, [location.search]);
     
     // Batch Screen State
     const [isProcessing, setIsProcessing] = useState(false);

@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { usePuterStore } from "~/lib/puter";
 import { Settings } from "lucide-react";
 
@@ -8,7 +8,11 @@ const Navbar = () => {
     // If role is null but they are authenticated, default to student view so navigation doesn't vanish
     const isStudent = auth.role === 'student' || !auth.isAuthenticated || (auth.isAuthenticated && !auth.role);
 
-    const homeLink = isRecruiter ? "/recruiter" : "/";
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    // Determine which radio should be visually active based on our current route
+    const isHistory = location.search.includes('history');
 
     return (
         <nav className="navbar">
@@ -17,19 +21,24 @@ const Navbar = () => {
                     <p className="text-2xl font-bold text-gradient">AIRC</p>
                 </Link>
                 
-                {/* User Requested Glass Radio Group Component */}
-                <div className="glass-radio-group hidden md:flex">
-                    <input type="radio" id="glass-silver" name="subscription" value="silver" defaultChecked />
-                    <label htmlFor="glass-silver">Silver</label>
-                    
-                    <input type="radio" id="glass-gold" name="subscription" value="gold" />
-                    <label htmlFor="glass-gold">Gold</label>
-                    
-                    <input type="radio" id="glass-platinum" name="subscription" value="platinum" />
-                    <label htmlFor="glass-platinum">Platinum</label>
-                    
-                    <div className="glass-glider"></div>
-                </div>
+                {/* User Requested Glass Radio Group Component used as Navigation Controller */}
+                {auth.isAuthenticated && (
+                    <div className="glass-radio-group hidden lg:flex" onChange={(e: any) => {
+                        const val = e.target.value;
+                        if (val === 'home') navigate(homeLink);
+                        if (val === 'history') {
+                            navigate(isRecruiter ? '/recruiter?tab=history' : '/');
+                        }
+                    }}>
+                        <input type="radio" id="glass-gold" name="subscription" value="home" checked={!isHistory} readOnly />
+                        <label htmlFor="glass-gold">Home Status</label>
+                        
+                        <input type="radio" id="glass-platinum" name="subscription" value="history" checked={isHistory} readOnly />
+                        <label htmlFor="glass-platinum">Scan History</label>
+                        
+                        <div className="glass-glider"></div>
+                    </div>
+                )}
             </div>
 
             <div className="flex gap-4 items-center">
