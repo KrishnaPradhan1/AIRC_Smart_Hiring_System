@@ -1,0 +1,5 @@
+
+> typecheck
+> react-router typegen && tsc
+
+app/routes/apply.tsx(1,31): error TS1484: 'FormEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.

@@ -7,6 +7,8 @@ interface Resume {
     feedback: Feedback;
     audioTranscript?: string;
     audioFeedback?: AudioFeedback;
+    createdAt?: number;
+    fileName?: string;
 }
 
 interface AudioFeedback {

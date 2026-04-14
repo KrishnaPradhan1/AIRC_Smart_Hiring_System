@@ -33,6 +33,8 @@ const RecruiterDashboard = () => {
     const [files, setFiles] = useState<File[]>([]);
     const [fairnessMode, setFairnessMode] = useState(false);
     const [results, setResults] = useState<CandidateResult[]>([]);
+    const [previousBatches, setPreviousBatches] = useState<CandidateResult[]>([]);
+    const [showPreviousBatches, setShowPreviousBatches] = useState(false);
 
     // Jobs State
     const [jobs, setJobs] = useState<any[]>([]);
@@ -105,6 +107,46 @@ const RecruiterDashboard = () => {
         return 'red';
     }
 
+    useEffect(() => {
+        if (activeTab !== 'batch') return;
+        
+        const loadPreviousBatches = async () => {
+            const allResumes = (await kv.list('resume:*', true)) as any[];
+            const validResults: CandidateResult[] = [];
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+
+            for (const resumeItem of allResumes) {
+                if (!resumeItem.value) continue;
+                try {
+                    const parsed = JSON.parse(resumeItem.value);
+                    if (parsed.createdAt && (now - parsed.createdAt > thirtyDaysMs)) {
+                        await kv.set(`resume:${parsed.id}`, '');
+                        if (parsed.resumePath) await fs.delete(parsed.resumePath).catch(() => null);
+                        if (parsed.imagePath) await fs.delete(parsed.imagePath).catch(() => null);
+                        continue;
+                    }
+                    if (parsed.feedback && parsed.feedback.overallScore) {
+                        validResults.push({
+                            id: parsed.id,
+                            name: parsed.fileName || parsed.id.split('-')[0],
+                            overallScore: parsed.feedback.overallScore,
+                            semanticScore: parsed.feedback.semanticScore || 0,
+                            keywordScore: parsed.feedback.keywordScore || 0,
+                            colorBucket: getColorBucket(parsed.feedback.overallScore)
+                        });
+                    }
+                } catch (e) {
+                    // Ignore parse errors
+                }
+            }
+            
+            validResults.sort((a,b) => b.overallScore - a.overallScore);
+            setPreviousBatches(validResults);
+        }
+        loadPreviousBatches();
+    }, [activeTab, kv, fs]);
+
     // Helper to run promises with a concurrency limit
     const asyncPool = async <T,>(poolLimit: number, array: any[], iteratorFn: (item: any) => Promise<T>): Promise<T[]> => {
         const ret: Promise<T>[] = [];
@@ -165,6 +207,8 @@ const RecruiterDashboard = () => {
                     imagePath: uploadedImage.path,
                     companyName, jobTitle, jobDescription,
                     feedback: {},
+                    createdAt: Date.now(),
+                    fileName: file.name
                 }
 
                 let promptInstructions = prepareInstructions({ jobTitle, jobDescription, resumeText });
@@ -455,6 +499,56 @@ const RecruiterDashboard = () => {
                                     Batch Analyze {files.length > 0 ? `(${files.length} Resumes)` : ''}
                                 </button>
                             </form>
+                        )}
+                        
+                        {!isProcessing && results.length === 0 && previousBatches.length > 0 && (
+                            <div className="mt-12 w-full max-w-3xl mx-auto">
+                                <button 
+                                    onClick={() => setShowPreviousBatches(!showPreviousBatches)}
+                                    className="w-full flex items-center justify-between text-indigo-700 bg-indigo-50 hover:bg-indigo-100 p-4 rounded-xl font-bold transition-colors border border-indigo-100"
+                                >
+                                    <span>View Previously Screened Resumes ({previousBatches.length})</span>
+                                    <span>{showPreviousBatches ? '▼' : '►'}</span>
+                                </button>
+                                
+                                {showPreviousBatches && (
+                                    <div className="mt-4 overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-100 p-2 animate-in fade-in slide-in-from-top-4">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
+                                                    <th className="p-4 font-semibold rounded-tl-lg">Candidate</th>
+                                                    <th className="p-4 font-semibold">Match Score</th>
+                                                    <th className="p-4 font-semibold">Semantic</th>
+                                                    <th className="p-4 font-semibold">Keyword</th>
+                                                    <th className="p-4 font-semibold text-right rounded-tr-lg">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {previousBatches.map((r) => (
+                                                    <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="p-4 font-medium text-gray-900 truncate max-w-[150px]" title={r.name}>{r.name}</td>
+                                                        <td className="p-4">
+                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${r.colorBucket === 'green' ? 'bg-green-100 text-green-700' :
+                                                                r.colorBucket === 'amber' ? 'bg-yellow-100 text-yellow-700' :
+                                                                    'bg-red-100 text-red-700'
+                                                                }`}>
+                                                                {r.overallScore}/100
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-4 text-gray-600">{r.semanticScore}%</td>
+                                                        <td className="p-4 text-gray-600">{r.keywordScore}%</td>
+                                                        <td className="p-4 text-right">
+                                                            <Link to={`/resume/${r.id}`} className="text-blue-600 hover:text-blue-800 text-sm font-medium border border-blue-200 hover:border-blue-300 rounded-lg px-3 py-1.5 transition-all">
+                                                                View Details
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 )}

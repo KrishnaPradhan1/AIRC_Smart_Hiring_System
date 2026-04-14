@@ -12,9 +12,26 @@ const Navbar = () => {
 
     return (
         <nav className="navbar">
-            <Link to={homeLink}>
-                <p className="text-2xl font-bold text-gradient">AIRC</p>
-            </Link>
+            <div className="flex items-center gap-6">
+                <Link to={homeLink}>
+                    <p className="text-2xl font-bold text-gradient">AIRC</p>
+                </Link>
+                
+                {/* User Requested Glass Radio Group Component */}
+                <div className="glass-radio-group hidden md:flex">
+                    <input type="radio" id="glass-silver" name="subscription" value="silver" defaultChecked />
+                    <label htmlFor="glass-silver">Silver</label>
+                    
+                    <input type="radio" id="glass-gold" name="subscription" value="gold" />
+                    <label htmlFor="glass-gold">Gold</label>
+                    
+                    <input type="radio" id="glass-platinum" name="subscription" value="platinum" />
+                    <label htmlFor="glass-platinum">Platinum</label>
+                    
+                    <div className="glass-glider"></div>
+                </div>
+            </div>
+
             <div className="flex gap-4 items-center">
                 {isStudent && (
                     <>
