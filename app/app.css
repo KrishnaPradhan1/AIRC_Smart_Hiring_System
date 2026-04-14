@@ -178,7 +178,7 @@ form {
 /* From Uiverse.io by chase2k25 */ 
 .glass-radio-group {
   --bg: rgba(255, 255, 255, 0.06);
-  --text: #e5e5e5;
+  --text: #475467;
 
   display: flex;
   position: relative;
@@ -215,11 +215,11 @@ form {
 }
 
 .glass-radio-group label:hover {
-  color: white;
+  color: #000;
 }
 
 .glass-radio-group input:checked + label {
-  color: #fff;
+  color: #000;
 }
 
 .glass-glider {
