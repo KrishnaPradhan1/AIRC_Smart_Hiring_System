@@ -226,7 +226,7 @@ export default function JobApplicants() {
         <main className="bg-[url('/images/bg-main.svg')] bg-cover min-h-screen pb-24">
             <Navbar />
 
-            <section className="max-w-6xl mx-auto px-4 mt-8">
+            <section className="max-w-6xl mx-auto px-4 pt-32">
                 <div className="mb-8">
                     <Link to="/recruiter" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-semibold mb-4 hover:-translate-x-1 transition-transform">
                         <ChevronLeft size={20} /> Back to Dashboard
