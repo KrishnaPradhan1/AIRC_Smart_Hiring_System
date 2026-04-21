@@ -86,7 +86,9 @@ const Onboarding = () => {
                 // Update local Zustand cache natively without full reload
                 localStorage.setItem('userRole', 'student');
                 auth.refreshUser();
-                navigate('/');
+                
+                const nextRoute = urlParams.get('next');
+                navigate(nextRoute || '/');
             } else {
                 try {
                     const { error } = await supabase.from('recruiter_profiles').upsert({
@@ -105,7 +107,9 @@ const Onboarding = () => {
                 // Update local Zustand cache
                 localStorage.setItem('userRole', 'recruiter');
                 auth.refreshUser();
-                navigate('/recruiter');
+                
+                const nextRoute = urlParams.get('next');
+                navigate(nextRoute || '/recruiter');
             }
         } catch (err: any) {
             console.error(err);

@@ -61,7 +61,7 @@ const Auth = () => {
                         localStorage.setItem('userRole', roleToCreate);
 
                         // Route to onboarding
-                        navigate(`/onboarding?role=${roleToCreate}`);
+                        navigate(`/onboarding?role=${roleToCreate}&next=${encodeURIComponent(next)}`);
                     }
                 } catch (err: any) {
                     console.error("Error checking/creating profile:", err);
