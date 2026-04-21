@@ -23,7 +23,7 @@ const Navbar = () => {
                 </Link>
                 
                 {/* User Requested Glass Radio Group Component used as Navigation Controller */}
-                {auth.isAuthenticated && (
+                {auth.isAuthenticated && isRecruiter && (
                     <div className="glass-radio-group hidden lg:flex" onChange={(e: any) => {
                         const val = e.target.value;
                         if (val === 'home') navigate(homeLink);
