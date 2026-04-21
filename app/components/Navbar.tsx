@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router";
 import { usePuterStore } from "~/lib/puter";
-import { Settings } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
 
 const Navbar = () => {
     const { auth } = usePuterStore();
@@ -62,9 +62,17 @@ const Navbar = () => {
                 )}
 
                 {auth.isAuthenticated && (
-                    <Link to="/profile" className="ml-2 flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:scale-105 transition-all border border-indigo-100 shadow-sm" title="Profile Settings">
-                        <Settings size={20} />
-                    </Link>
+                    <div className="flex gap-2 ml-2">
+                        <Link to="/profile" className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:scale-105 transition-all border border-indigo-100 shadow-sm" title="Profile Settings">
+                            <Settings size={20} />
+                        </Link>
+                        <button onClick={async () => {
+                            await auth.signOut();
+                            navigate('/');
+                        }} className="flex items-center justify-center w-10 h-10 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:scale-105 transition-all border border-red-100 shadow-sm" title="Log Out">
+                            <LogOut size={20} />
+                        </button>
+                    </div>
                 )}
             </div>
         </nav>

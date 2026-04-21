@@ -214,6 +214,8 @@ export const usePuterStore = create<PuterStore>((set, get) => {
 
         try {
             await puter.auth.signOut();
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('pendingRole');
             set({
                 auth: {
                     user: null,
