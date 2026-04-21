@@ -204,6 +204,21 @@ export default function ProfileSettings() {
                             </button>
                         </div>
                     </div>
+
+                    <div className="bg-red-50 border border-red-100 rounded-3xl p-6 shadow-sm mt-6">
+                        <h3 className="font-bold text-red-900 flex items-center gap-2 mb-3">
+                            Log Out
+                        </h3>
+                        <p className="text-sm text-red-800 mb-4 leading-relaxed">
+                            End your current session safely.
+                        </p>
+                        <button 
+                            onClick={() => auth.signOut()}
+                            className="block text-center w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl transition-all text-sm shadow-md"
+                        >
+                            Log Out
+                        </button>
+                    </div>
                 </div>
 
                 {/* Main Settings Form */}
