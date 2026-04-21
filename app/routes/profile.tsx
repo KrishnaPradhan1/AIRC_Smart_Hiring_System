@@ -139,6 +139,32 @@ export default function ProfileSettings() {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        if (!confirm("Are you absolutely sure you want to permanently delete your account and all associated data? This action cannot be undone.")) return;
+        
+        const verify = prompt("Type 'DELETE' to confirm account deletion:");
+        if (verify !== 'DELETE') {
+            alert("Account deletion cancelled.");
+            return;
+        }
+
+        setIsSwitchingRole(true);
+        try {
+            // Delete specific profiles and base profile
+            await supabase.from('student_profiles').delete().eq('id', auth.user!.username);
+            await supabase.from('recruiter_profiles').delete().eq('id', auth.user!.username);
+            await supabase.from('profiles').delete().eq('id', auth.user!.username);
+            
+            alert('Your account has been deleted successfully.');
+            await auth.signOut();
+            navigate('/');
+        } catch (err: any) {
+            console.error(err);
+            alert("Failed to delete account: " + err.message);
+            setIsSwitchingRole(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -217,6 +243,22 @@ export default function ProfileSettings() {
                             className="block text-center w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl transition-all text-sm shadow-md"
                         >
                             Log Out
+                        </button>
+                    </div>
+
+                    <div className="bg-red-100 border border-red-200 rounded-3xl p-6 shadow-sm mt-6">
+                        <h3 className="font-bold text-red-900 flex items-center gap-2 mb-3">
+                            <Trash2 size={18} /> Delete Account
+                        </h3>
+                        <p className="text-sm text-red-800 mb-4 leading-relaxed">
+                            Permanently delete your profile and all associated data. This action cannot be undone.
+                        </p>
+                        <button 
+                            onClick={handleDeleteAccount}
+                            disabled={isSwitchingRole}
+                            className={`block w-full font-bold py-2 rounded-xl transition-all text-sm shadow-md ${isSwitchingRole ? 'bg-red-400 text-white cursor-not-allowed' : 'bg-red-700 hover:bg-red-800 text-white'}`}
+                        >
+                            Delete Account
                         </button>
                     </div>
                 </div>
